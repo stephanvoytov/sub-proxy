@@ -30,9 +30,7 @@ cp .env.example .env
 2. Отредактируйте `.env`:
 
 ```env
-BACKEND_TYPE=remnawave
 BACKEND_URL=http://remnawave:3000
-BACKEND_API_TOKEN=your_token
 
 SOURCE_1_LABEL=🇷🇺 Russia Yandex
 SOURCE_1_URL=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt
@@ -103,9 +101,7 @@ docker compose restart remnawave-subscription-page
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `BACKEND_TYPE` | `remnawave` | Тип бекенда (`remnawave` или `simple`) |
-| `BACKEND_URL` | — | Базовый URL бекенда |
-| `BACKEND_API_TOKEN` | — | API токен для бекенда |
+| `BACKEND_URL` | — | Базовый URL бекенда (например Remnawave) |
 | `SOURCE_{ID}_LABEL` | — | Название группы источников |
 | `SOURCE_{ID}_URL` | — | URL источника (GitHub raw, HTTP подписка и т.д.) |
 | `SOURCE_{ID}_COUNT` | `10` | Максимум серверов из этого источника |

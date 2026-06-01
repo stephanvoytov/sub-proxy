@@ -32,9 +32,7 @@ cp .env.example .env
 2. Edit `.env` with your backend URL and sources:
 
 ```env
-BACKEND_TYPE=remnawave
 BACKEND_URL=http://remnawave:3000
-BACKEND_API_TOKEN=your_token
 
 SOURCE_1_LABEL=🇷🇺 Russia
 SOURCE_1_URL=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt
@@ -105,9 +103,7 @@ That's it. Sub-Proxy intercepts subscription requests, adds servers from configu
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BACKEND_TYPE` | `remnawave` | Backend type (`remnawave` or `simple`) |
-| `BACKEND_URL` | — | Backend base URL |
-| `BACKEND_API_TOKEN` | — | API token for backend |
+| `BACKEND_URL` | — | Backend base URL (e.g. Remnawave panel) |
 | `SOURCE_{ID}_LABEL` | — | Source group display name |
 | `SOURCE_{ID}_URL` | — | Source URL (GitHub raw, HTTP sub, etc.) |
 | `SOURCE_{ID}_COUNT` | `10` | Max servers from this source |

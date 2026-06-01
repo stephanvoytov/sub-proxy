@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Sub-Proxy", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="Sub-Proxy", version="3.0.0", lifespan=lifespan)
 
 
 @app.get("/health")
