@@ -2,6 +2,10 @@
 
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/stephanvoytov/sub-proxy/tests.yml?label=tests)](https://github.com/stephanvoytov/sub-proxy/actions)
+[![GitHub stars](https://img.shields.io/github/stars/stephanvoytov/sub-proxy?style=flat)](https://github.com/stephanvoytov/sub-proxy/stargazers)
+[![Docker Pulls](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://github.com/stephanvoytov/sub-proxy/pkgs/container/sub-proxy)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 
 Subscription proxy server for Remnawave and other panels. Merges external server sources into user subscriptions with deduplication, grouping, and optional ping checking.
 
