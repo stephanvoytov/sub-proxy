@@ -11,6 +11,8 @@ def parse_config(raw: str) -> ServerEntry | None:
 
     try:
         protocol = raw.split("://")[0]
+        if not protocol:
+            return None
         rest = raw[len(protocol) + 3:]
 
         name = ""

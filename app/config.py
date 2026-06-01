@@ -53,8 +53,7 @@ class Settings(BaseSettings):
 
     SNAPSHOT_PATH: str = "/data/cache.json"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
     @property
     def sources(self) -> List[SourceConfig]:
