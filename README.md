@@ -51,18 +51,30 @@ docker compose up -d
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/{short_uuid}` | Get merged subscription |
+| GET | `/{path}` | Transparent proxy: forwards any path to backend, merges subscription responses |
 | GET | `/health` | Health check |
 | GET | `/api/status` | Cache and source status |
 | GET | `/api/refresh` | Force cache refresh |
 
-## Caddy Integration
+## Integration
+
+### Option 1: Behind subscription page (recommended)
+
+Place sub-proxy between your subscription page and the backend:
+
+```
+Subscription Page → Sub-Proxy → Backend
+```
+
+Set the subscription page's `REMNAWAVE_PANEL_URL=http://sub-proxy:4080`. The sub-proxy forwards all requests to the backend and automatically merges sources into subscription responses.
+
+### Option 2: Direct Caddy route
 
 Add to your Caddyfile:
 
 ```caddyfile
 your-domain.com {
-    handle /sub* {
+    handle /sub/* {
         reverse_proxy sub-proxy:4080
     }
 }

@@ -49,18 +49,28 @@ docker compose up -d
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/{short_uuid}` | Получить подписку |
+| GET | `/{path}` | Прозрачный прокси: любой путь, подписки с подмешиванием |
 | GET | `/health` | Health check |
 | GET | `/api/status` | Статус кеша и источников |
 | GET | `/api/refresh` | Принудительный рефреш кеша |
 
-## Интеграция с Caddy
+## Интеграция
 
-Добавьте в Caddyfile:
+### Вариант 1: Под subscription page (рекомендуется)
+
+Sub-proxy встаёт между страницей подписок и бекендом:
+
+```
+Subscription Page → Sub-Proxy → Backend
+```
+
+Укажите в `.env` subscription page `REMNAWAVE_PANEL_URL=http://sub-proxy:4080`. Sub-proxy проксирует все запросы в бекенд, автоматически подмешивая источники в ответы с подписками.
+
+### Вариант 2: Прямой роут в Caddy
 
 ```caddyfile
 your-domain.com {
-    handle /sub* {
+    handle /sub/* {
         reverse_proxy sub-proxy:4080
     }
 }

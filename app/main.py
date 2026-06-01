@@ -1,15 +1,37 @@
 import asyncio
-import time
+import base64
+import re
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from app.config import settings
-from app.backends import get_backend
 from app.cache import state
 from app.services.merger import merge_subscription
 from app.services.refresher import refresh_cache, start_refresher
+
+PROTOCOLS = (b"vless://", b"vmess://", b"ss://", b"hysteria2://", b"trojan://")
+SHORT_UUID_RE = re.compile(r"^[A-Za-z0-9_\-]{8,32}$")
+
+
+def looks_like_subscription(body: bytes) -> bool:
+    try:
+        decoded = base64.b64decode(body + b"==").decode("utf-8", errors="ignore")
+        return any(p.decode() in decoded for p in PROTOCOLS)
+    except Exception:
+        return False
+
+
+def extract_short_uuid(path: str) -> str | None:
+    parts = [p for p in path.strip("/").split("/") if p]
+    if not parts:
+        return None
+    candidate = parts[-1]
+    if SHORT_UUID_RE.match(candidate):
+        return candidate
+    return None
 
 
 @asynccontextmanager
@@ -54,49 +76,57 @@ async def status():
     }
 
 
-@app.api_route("/{short_uuid:path}", methods=["GET", "POST"])
-async def sub(short_uuid: str, request: Request):
-    user_agent = request.headers.get("User-Agent", "")
-    hw_id = request.headers.get("x-hwid", "")
+@app.api_route("/{path:path}", methods=["GET", "HEAD", "POST"])
+async def proxy(path: str, request: Request):
+    upstream_url = f"{settings.BACKEND_URL.rstrip('/')}/{path}"
+    if request.url.query:
+        upstream_url += f"?{request.url.query}"
 
-    backend = get_backend()
+    forward_headers = {
+        k: v
+        for k, v in request.headers.items()
+        if k.lower() not in ("host", "content-length", "accept-encoding")
+    }
+    forward_headers["accept-encoding"] = "identity"
+    body_bytes = await request.body()
 
     try:
-        extra_headers = {}
-        if hw_id:
-            extra_headers["x-hwid"] = hw_id
+        async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
+            upstream = await client.request(
+                method=request.method,
+                url=upstream_url,
+                headers=forward_headers,
+                content=body_bytes,
+            )
+    except Exception as exc:
+        return PlainTextResponse(f"upstream error: {exc}", status_code=502)
 
-        original = await backend.fetch_subscription(
-            short_uuid=short_uuid,
-            user_agent=user_agent,
-            headers=extra_headers,
-        )
-    except Exception as e:
-        return PlainTextResponse(f"Backend error: {e}", status_code=502)
+    body = upstream.content
+    content_type = upstream.headers.get("content-type", "")
+    is_plain = "text/plain" in content_type or "octet-stream" in content_type
 
-    if state.BYPASS_CACHE:
-        source_order = [s.label for s in settings.sources]
-        merged = merge_subscription(
-            original=original,
-            sources=state.BYPASS_CACHE,
-            source_order=source_order,
-            dedup=settings.DEDUP_ENABLED,
-            probed=state.PROBE_RESULTS,
-        )
-        return Response(
-            content=merged,
-            media_type="text/plain",
-            headers={
-                "Content-Type": "text/plain; charset=utf-8",
-                "Profile-Title": "Sub-Proxy Merged",
-            },
-        )
+    if request.method == "GET" and is_plain and looks_like_subscription(body):
+        short_uuid = extract_short_uuid(path)
+        if short_uuid and state.BYPASS_CACHE:
+            source_order = [s.label for s in settings.sources]
+            merged = merge_subscription(
+                original=body,
+                sources=state.BYPASS_CACHE,
+                source_order=source_order,
+                dedup=settings.DEDUP_ENABLED,
+                probed=state.PROBE_RESULTS,
+            )
+            body = merged
+
+    excluded = {"content-encoding", "content-length", "transfer-encoding", "connection"}
+    resp_headers = {
+        k: v for k, v in upstream.headers.items() if k.lower() not in excluded
+    }
+    resp_headers["content-length"] = str(len(body))
 
     return Response(
-        content=original,
-        media_type="text/plain",
-        headers={
-            "Content-Type": "text/plain; charset=utf-8",
-            "Profile-Title": "Sub-Proxy",
-        },
+        content=body,
+        status_code=upstream.status_code,
+        headers=resp_headers,
+        media_type=content_type or "application/octet-stream",
     )
