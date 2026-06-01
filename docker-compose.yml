@@ -1,0 +1,17 @@
+services:
+  sub-proxy:
+    build: .
+    container_name: sub-proxy
+    restart: always
+    ports:
+      - "4080:4080"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
