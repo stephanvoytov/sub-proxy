@@ -54,27 +54,18 @@ docker compose up -d
 | GET | `/api/status` | Статус кеша и источников |
 | GET | `/api/refresh` | Принудительный рефреш кеша |
 
-## Интеграция
+## Архитектура
 
-### Вариант 1: Под subscription page (рекомендуется)
-
-Sub-proxy встаёт между страницей подписок и бекендом:
+Sub-Proxy располагается между subscription page и бекендом:
 
 ```
-Subscription Page → Sub-Proxy → Backend
+Пользователь → Subscription Page → Sub-Proxy → Backend
 ```
 
-Укажите в `.env` subscription page `REMNAWAVE_PANEL_URL=http://sub-proxy:4080`. Sub-proxy проксирует все запросы в бекенд, автоматически подмешивая источники в ответы с подписками.
+Subscription page отправляет все запросы на Sub-Proxy (через `REMNAWAVE_PANEL_URL`).  
+Sub-Proxy проксирует их в бекенд, а когда обнаруживает subscription-ответ (base64 с proxy ссылками) — подмешивает закешированные серверы из настроенных источников.
 
-### Вариант 2: Прямой роут в Caddy
-
-```caddyfile
-your-domain.com {
-    handle /sub/* {
-        reverse_proxy sub-proxy:4080
-    }
-}
-```
+Никаких изменений в Caddy или reverse proxy не требуется — Sub-Proxy работает внутри Docker сети.
 
 ## Конфигурация
 

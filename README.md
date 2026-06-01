@@ -56,29 +56,18 @@ docker compose up -d
 | GET | `/api/status` | Cache and source status |
 | GET | `/api/refresh` | Force cache refresh |
 
-## Integration
+## Architecture
 
-### Option 1: Behind subscription page (recommended)
-
-Place sub-proxy between your subscription page and the backend:
+Sub-Proxy sits between the subscription page and the backend:
 
 ```
-Subscription Page → Sub-Proxy → Backend
+User → Subscription Page → Sub-Proxy → Backend
 ```
 
-Set the subscription page's `REMNAWAVE_PANEL_URL=http://sub-proxy:4080`. The sub-proxy forwards all requests to the backend and automatically merges sources into subscription responses.
+The subscription page sends all requests to Sub-Proxy (via `REMNAWAVE_PANEL_URL`).  
+Sub-Proxy forwards them to the backend, and when a subscription response is detected (base64-encoded proxy links), it merges cached servers from configured sources before returning.
 
-### Option 2: Direct Caddy route
-
-Add to your Caddyfile:
-
-```caddyfile
-your-domain.com {
-    handle /sub/* {
-        reverse_proxy sub-proxy:4080
-    }
-}
-```
+No Caddy or reverse proxy changes are needed — Sub-Proxy stays internal to the Docker network.
 
 ## Configuration
 
