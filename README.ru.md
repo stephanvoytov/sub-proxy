@@ -59,24 +59,6 @@ your-domain.com {
 }
 ```
 
-## Пример конфига для MilkyNet
-
-```env
-BACKEND_TYPE=remnawave
-BACKEND_URL=http://remnawave:3000
-BACKEND_API_TOKEN=eyJhbGciOiJIUzI1NiIs...
-
-SOURCE_1_LABEL=🆓 Бесплатные серверы (проверьте пинг)
-SOURCE_1_URL=https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt
-SOURCE_1_COUNT=10
-SOURCE_1_PROBE=false
-
-SOURCE_2_LABEL=⚡ Премиум серверы
-SOURCE_2_URL=https://example.com/my-premium-servers.txt
-SOURCE_2_COUNT=20
-SOURCE_2_PROBE=true
-```
-
 ## Конфигурация
 
 | Переменная | По умолчанию | Описание |
