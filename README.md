@@ -69,6 +69,38 @@ Sub-Proxy forwards them to the backend, and when a subscription response is dete
 
 No Caddy or reverse proxy changes are needed — Sub-Proxy stays internal to the Docker network.
 
+## Configuring for Remnawave
+
+1. Make sure Sub-Proxy is on the same Docker network as Remnawave (e.g. `remnawave-network`):
+
+```yaml
+services:
+  sub-proxy:
+    build: .
+    container_name: sub-proxy
+    networks:
+      - remnawave-network
+
+networks:
+  remnawave-network:
+    external: true
+```
+
+2. In the subscription page `.env`, change the panel URL:
+
+```diff
+- REMNAWAVE_PANEL_URL=http://remnawave:3000
++ REMNAWAVE_PANEL_URL=http://sub-proxy:4080
+```
+
+3. Restart the subscription page container:
+
+```bash
+docker compose restart remnawave-subscription-page
+```
+
+That's it. Sub-Proxy intercepts subscription requests, adds servers from configured sources, and passes everything else through unchanged.
+
 ## Configuration
 
 | Variable | Default | Description |

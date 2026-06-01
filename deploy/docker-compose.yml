@@ -1,7 +1,7 @@
 services:
-  sub-proxy-v3:
+  sub-proxy:
     build: .
-    container_name: sub-proxy-v3
+    container_name: sub-proxy
     restart: unless-stopped
     env_file:
       - .env

@@ -67,6 +67,38 @@ Sub-Proxy проксирует их в бекенд, а когда обнару�
 
 Никаких изменений в Caddy или reverse proxy не требуется — Sub-Proxy работает внутри Docker сети.
 
+## Настройка для Remnawave
+
+1. Убедитесь, что Sub-Proxy в той же Docker сети, что и Remnawave (например `remnawave-network`):
+
+```yaml
+services:
+  sub-proxy:
+    build: .
+    container_name: sub-proxy
+    networks:
+      - remnawave-network
+
+networks:
+  remnawave-network:
+    external: true
+```
+
+2. В `.env` subscription page измените URL панели:
+
+```diff
+- REMNAWAVE_PANEL_URL=http://remnawave:3000
++ REMNAWAVE_PANEL_URL=http://sub-proxy:4080
+```
+
+3. Перезапустите subscription page:
+
+```bash
+docker compose restart remnawave-subscription-page
+```
+
+Готово. Sub-Proxy перехватывает subscription-запросы, подмешивает серверы из источников, всё остальное пропускает без изменений.
+
 ## Конфигурация
 
 | Переменная | По умолчанию | Описание |
