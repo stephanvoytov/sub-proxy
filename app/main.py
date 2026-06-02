@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import re
+import time
 from contextlib import asynccontextmanager
 
 import httpx
@@ -14,6 +15,26 @@ from app.services.refresher import refresh_cache, start_refresher
 
 PROTOCOLS = (b"vless://", b"vmess://", b"ss://", b"hysteria2://", b"trojan://")
 SHORT_UUID_RE = re.compile(r"^[A-Za-z0-9_\-]{8,32}$")
+
+# Shared HTTP client with connection pooling
+_client: httpx.AsyncClient | None = None
+_SUB_CACHE: dict[str, tuple[float, bytes]] = {}
+_SUB_CACHE_TTL = 30  # seconds
+
+
+def get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        limits = httpx.Limits(max_connections=50, max_keepalive_connections=20)
+        _client = httpx.AsyncClient(timeout=20, follow_redirects=False, limits=limits)
+    return _client
+
+
+async def close_client():
+    global _client
+    if _client:
+        await _client.aclose()
+        _client = None
 
 
 def looks_like_subscription(body: bytes) -> bool:
@@ -38,6 +59,7 @@ def extract_short_uuid(path: str) -> str | None:
 async def lifespan(app: FastAPI):
     asyncio.create_task(start_refresher())
     yield
+    await close_client()
 
 
 app = FastAPI(title="Sub-Proxy", version="3.0.0", lifespan=lifespan)
@@ -82,6 +104,21 @@ async def proxy(path: str, request: Request):
     if request.url.query:
         upstream_url += f"?{request.url.query}"
 
+    short_uuid = None
+    # Check subscription cache (GET only, subscription-like paths)
+    cache_key = upstream_url
+    if request.method == "GET":
+        short_uuid = extract_short_uuid(path)
+        if short_uuid:
+            cached = _SUB_CACHE.get(short_uuid)
+            if cached and time.time() - cached[0] < _SUB_CACHE_TTL:
+                return Response(
+                    content=cached[1],
+                    status_code=200,
+                    media_type="text/plain; charset=utf-8",
+                    headers={"content-length": str(len(cached[1]))},
+                )
+
     forward_headers = {
         k: v
         for k, v in request.headers.items()
@@ -91,13 +128,13 @@ async def proxy(path: str, request: Request):
     body_bytes = await request.body()
 
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
-            upstream = await client.request(
-                method=request.method,
-                url=upstream_url,
-                headers=forward_headers,
-                content=body_bytes,
-            )
+        client = get_client()
+        upstream = await client.request(
+            method=request.method,
+            url=upstream_url,
+            headers=forward_headers,
+            content=body_bytes,
+        )
     except Exception as exc:
         return PlainTextResponse(f"upstream error: {exc}", status_code=502)
 
@@ -106,7 +143,6 @@ async def proxy(path: str, request: Request):
     is_plain = "text/plain" in content_type or "octet-stream" in content_type
 
     if request.method == "GET" and is_plain and looks_like_subscription(body):
-        short_uuid = extract_short_uuid(path)
         if short_uuid and state.BYPASS_CACHE:
             source_order = [s.label for s in settings.sources]
             merged = merge_subscription(
@@ -117,6 +153,8 @@ async def proxy(path: str, request: Request):
                 probed=state.PROBE_RESULTS,
             )
             body = merged
+            # Cache the merged result
+            _SUB_CACHE[short_uuid] = (time.time(), body)
 
     excluded = {"content-encoding", "content-length", "transfer-encoding", "connection"}
     resp_headers = {
