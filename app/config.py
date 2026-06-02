@@ -7,6 +7,7 @@ class SourceConfig(BaseSettings):
     url: str
     count: int = 10
     probe: bool = False
+    squads: List[str] = []
 
 
 class Settings(BaseSettings):
@@ -42,6 +43,13 @@ class Settings(BaseSettings):
     SOURCE_5_COUNT: int = 10
     SOURCE_5_PROBE: bool = False
 
+    # Squad filtering (comma-separated short_uuids, empty = all users)
+    SOURCE_1_SQUADS: str = ""
+    SOURCE_2_SQUADS: str = ""
+    SOURCE_3_SQUADS: str = ""
+    SOURCE_4_SQUADS: str = ""
+    SOURCE_5_SQUADS: str = ""
+
     # Behaviour
     REFRESH_INTERVAL: int = 900
     PROBE_TIMEOUT: float = 1.5
@@ -62,11 +70,14 @@ class Settings(BaseSettings):
             label = getattr(self, f"SOURCE_{i}_LABEL", "")
             url = getattr(self, f"SOURCE_{i}_URL", "")
             if label and url:
+                raw_squads = getattr(self, f"SOURCE_{i}_SQUADS", "") or ""
+                squads = [s.strip() for s in raw_squads.split(",") if s.strip()]
                 result.append(SourceConfig(
                     label=label,
                     url=url,
                     count=getattr(self, f"SOURCE_{i}_COUNT", 10),
                     probe=getattr(self, f"SOURCE_{i}_PROBE", False),
+                    squads=squads,
                 ))
         return result
 

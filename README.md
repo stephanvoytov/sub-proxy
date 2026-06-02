@@ -108,6 +108,7 @@ That's it. Sub-Proxy intercepts subscription requests, adds servers from configu
 | `SOURCE_{ID}_URL` | — | Source URL (GitHub raw, HTTP sub, etc.) |
 | `SOURCE_{ID}_COUNT` | `10` | Max servers from this source |
 | `SOURCE_{ID}_PROBE` | `false` | Enable ping check for this source |
+| `SOURCE_{ID}_SQUADS` | — | Comma-separated short_uuids to restrict this source to (empty = all users) |
 | `REFRESH_INTERVAL` | `900` | Cache refresh interval (seconds) |
 | `DEDUP_ENABLED` | `true` | Remove duplicate servers |
 | `PROBE_TIMEOUT` | `1.5` | Ping timeout (seconds) |

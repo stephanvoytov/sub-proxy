@@ -59,3 +59,35 @@ def test_source_probe_default():
         SOURCE_1_URL="http://example.com/test.txt",
     )
     assert s.sources[0].probe is False
+
+
+def test_source_squads_empty_by_default():
+    s = Settings(
+        BACKEND_URL="http://test:3000",
+        BACKEND_API_TOKEN="token123",
+        SOURCE_1_LABEL="Test",
+        SOURCE_1_URL="http://example.com/test.txt",
+    )
+    assert s.sources[0].squads == []
+
+
+def test_source_squads_parsed():
+    s = Settings(
+        BACKEND_URL="http://test:3000",
+        BACKEND_API_TOKEN="token123",
+        SOURCE_1_LABEL="Test",
+        SOURCE_1_URL="http://example.com/test.txt",
+        SOURCE_1_SQUADS="abc123,def456",
+    )
+    assert s.sources[0].squads == ["abc123", "def456"]
+
+
+def test_source_squads_single_value():
+    s = Settings(
+        BACKEND_URL="http://test:3000",
+        BACKEND_API_TOKEN="token123",
+        SOURCE_1_LABEL="Test",
+        SOURCE_1_URL="http://example.com/test.txt",
+        SOURCE_1_SQUADS="abc123",
+    )
+    assert s.sources[0].squads == ["abc123"]

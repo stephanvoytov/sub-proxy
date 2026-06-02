@@ -145,16 +145,29 @@ async def proxy(path: str, request: Request):
     if request.method == "GET" and is_plain and looks_like_subscription(body):
         if short_uuid and state.BYPASS_CACHE:
             source_order = [s.label for s in settings.sources]
-            merged = merge_subscription(
-                original=body,
-                sources=state.BYPASS_CACHE,
-                source_order=source_order,
-                dedup=settings.DEDUP_ENABLED,
-                probed=state.PROBE_RESULTS,
-            )
-            body = merged
-            # Cache the merged result
-            _SUB_CACHE[short_uuid] = (time.time(), body)
+
+            # Filter sources by squad
+            filtered_cache = {}
+            for label in source_order:
+                entries = state.BYPASS_CACHE.get(label, [])
+                if not entries:
+                    continue
+                src = next((s for s in settings.sources if s.label == label), None)
+                if src and src.squads and short_uuid not in src.squads:
+                    continue  # source restricted to other squads
+                filtered_cache[label] = entries
+
+            if filtered_cache:
+                merged = merge_subscription(
+                    original=body,
+                    sources=filtered_cache,
+                    source_order=source_order,
+                    dedup=settings.DEDUP_ENABLED,
+                    probed=state.PROBE_RESULTS,
+                )
+                body = merged
+                # Cache the merged result
+                _SUB_CACHE[short_uuid] = (time.time(), body)
 
     excluded = {"content-encoding", "content-length", "transfer-encoding", "connection"}
     resp_headers = {

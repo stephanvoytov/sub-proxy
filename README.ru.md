@@ -106,6 +106,7 @@ docker compose restart remnawave-subscription-page
 | `SOURCE_{ID}_URL` | — | URL источника (GitHub raw, HTTP подписка и т.д.) |
 | `SOURCE_{ID}_COUNT` | `10` | Максимум серверов из этого источника |
 | `SOURCE_{ID}_PROBE` | `false` | Включить проверку пинга |
+| `SOURCE_{ID}_SQUADS` | — | short_uuuid через запятую — источник только для этих сквадов (пусто = для всех) |
 | `REFRESH_INTERVAL` | `900` | Интервал обновления кеша (сек) |
 | `DEDUP_ENABLED` | `true` | Удалять дубликаты серверов |
 | `PROBE_TIMEOUT` | `1.5` | Таймаут проверки пинга (сек) |
