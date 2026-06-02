@@ -18,7 +18,7 @@ SHORT_UUID_RE = re.compile(r"^[A-Za-z0-9_\-]{8,32}$")
 
 # Shared HTTP client with connection pooling
 _client: httpx.AsyncClient | None = None
-_SUB_CACHE: dict[str, tuple[float, bytes]] = {}
+_SUB_CACHE: dict[str, tuple[float, bytes, dict[str, str]]] = {}
 _SUB_CACHE_TTL = 30  # seconds
 
 
@@ -112,11 +112,11 @@ async def proxy(path: str, request: Request):
         if short_uuid:
             cached = _SUB_CACHE.get(short_uuid)
             if cached and time.time() - cached[0] < _SUB_CACHE_TTL:
+                _, cached_body, cached_headers = cached
                 return Response(
-                    content=cached[1],
+                    content=cached_body,
                     status_code=200,
-                    media_type="text/plain; charset=utf-8",
-                    headers={"content-length": str(len(cached[1]))},
+                    headers=cached_headers,
                 )
 
     forward_headers = {
@@ -166,8 +166,13 @@ async def proxy(path: str, request: Request):
                     probed=state.PROBE_RESULTS,
                 )
                 body = merged
-                # Cache the merged result
-                _SUB_CACHE[short_uuid] = (time.time(), body)
+                # Cache the merged result with headers
+                excluded = {"content-encoding", "content-length", "transfer-encoding", "connection"}
+                cache_headers = {
+                    k: v for k, v in upstream.headers.items() if k.lower() not in excluded
+                }
+                cache_headers["content-length"] = str(len(body))
+                _SUB_CACHE[short_uuid] = (time.time(), body, cache_headers)
 
     excluded = {"content-encoding", "content-length", "transfer-encoding", "connection"}
     resp_headers = {
