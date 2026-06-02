@@ -113,6 +113,7 @@ That's it. Sub-Proxy intercepts subscription requests, adds servers from configu
 | `DEDUP_ENABLED` | `true` | Remove duplicate servers |
 | `PROBE_TIMEOUT` | `1.5` | Ping timeout (seconds) |
 | `PROBE_CONCURRENCY` | `12` | Concurrent ping checks |
+| `MERGE_WHEN_EXPIRED` | `true` | Merge sources even for expired/unsupported subs (false = only merge active subs) |
 
 ## Development
 

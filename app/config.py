@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     DEDUP_ENABLED: bool = True
 
     SQUAD_CACHE_TTL: int = 300
+    MERGE_WHEN_EXPIRED: bool = True
 
     SNAPSHOT_PATH: str = "/data/cache.json"
 

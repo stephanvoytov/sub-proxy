@@ -111,6 +111,7 @@ docker compose restart remnawave-subscription-page
 | `DEDUP_ENABLED` | `true` | Удалять дубликаты серверов |
 | `PROBE_TIMEOUT` | `1.5` | Таймаут проверки пинга (сек) |
 | `PROBE_CONCURRENCY` | `12` | Количество одновременных проверок пинга |
+| `MERGE_WHEN_EXPIRED` | `true` | Подмешивать источники для истекших/неподдерживаемых подписок (false = только для активных) |
 
 ## Разработка
 

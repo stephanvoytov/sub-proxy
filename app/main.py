@@ -14,7 +14,9 @@ from app.services.merger import merge_subscription
 from app.services.refresher import refresh_cache, start_refresher
 
 PROTOCOLS = (b"vless://", b"vmess://", b"ss://", b"hysteria2://", b"trojan://")
+ZERO_UUID = "00000000-0000-0000-0000-000000000000"
 SHORT_UUID_RE = re.compile(r"^[A-Za-z0-9_\-]{8,32}$")
+_PROTOCOL_STRINGS = [p.decode() for p in PROTOCOLS]
 
 # Shared HTTP client with connection pooling
 _client: httpx.AsyncClient | None = None
@@ -40,9 +42,25 @@ async def close_client():
 def looks_like_subscription(body: bytes) -> bool:
     try:
         decoded = base64.b64decode(body + b"==").decode("utf-8", errors="ignore")
-        return any(p.decode() in decoded for p in PROTOCOLS)
+        return any(p in decoded for p in _PROTOCOL_STRINGS)
     except Exception:
         return False
+
+
+def is_expired_subscription(body: bytes) -> bool:
+    """Returns True if ALL protocol lines contain zero UUID (expired/unsupported sub)."""
+    try:
+        decoded = base64.b64decode(body + b"==").decode("utf-8", errors="ignore")
+    except Exception:
+        return False
+
+    lines = [l.strip() for l in decoded.splitlines() if l.strip()]
+    protocol_lines = [l for l in lines if any(p in l for p in _PROTOCOL_STRINGS)]
+
+    if not protocol_lines:
+        return False  # no protocol lines = can't determine, treat as active
+
+    return all(ZERO_UUID in l for l in protocol_lines)
 
 
 def extract_short_uuid(path: str) -> str | None:
@@ -143,7 +161,10 @@ async def proxy(path: str, request: Request):
     is_plain = "text/plain" in content_type or "octet-stream" in content_type
 
     if request.method == "GET" and is_plain and looks_like_subscription(body):
-        if short_uuid and state.BYPASS_CACHE:
+        # Skip merge for expired/unsupported subs when configured
+        if not settings.MERGE_WHEN_EXPIRED and is_expired_subscription(body):
+            pass
+        elif short_uuid and state.BYPASS_CACHE:
             source_order = [s.label for s in settings.sources]
 
             # Filter sources by squad
